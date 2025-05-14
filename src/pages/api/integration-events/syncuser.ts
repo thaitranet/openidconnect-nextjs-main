@@ -9,6 +9,7 @@ import {
 } from "ordercloud-javascript-sdk";
 import { isOrderCloudError } from "@/utils";
 import { jwtDecode as parseJwt } from "jwt-decode";
+import { getUserDetails } from "@/helpers/users";
 
 Configuration.Set({
   baseApiUrl: process.env.NEXT_PUBLIC_ORDERCLOUD_API_URL,
@@ -33,13 +34,14 @@ const routeHandler: NextApiHandler<OpenIdConnectResponse> = async (
   const claims = parseJwt<any>(payload.TokenResponse.id_token);
   console.log("claims", claims);
 
+  const userDetails = await getUserDetails(payload.TokenResponse.access_token);
+  console.log("User Details:", userDetails);
+
   // we should sync the user if Email, FirstName, or LastName have changed
   const shouldSyncUser =
-    existingUser.Email !== claims.email && existingUser.Username !== "NOT_AVAILABLE" ||
-    (existingUser.FirstName !== claims.given_name &&
-      existingUser.FirstName !== "NOT_AVAILABLE") ||
-    (existingUser.LastName !== claims.family_name &&
-      existingUser.LastName !== "NOT_AVAILABLE");
+    (existingUser.Email !== claims.email  ||
+    existingUser.FirstName !== claims.given_name  ||
+    existingUser.LastName !== claims.family_name) ;
 
   // if there is no reason to sync the user then simply return a success response
   if (!shouldSyncUser) {
@@ -53,11 +55,26 @@ const routeHandler: NextApiHandler<OpenIdConnectResponse> = async (
   console.log("Syncing user, changes detected");
   try {
     const updatedUserBody = {
-      Email: claims.email || "NOT_AVAILABLE",
-      FirstName: claims.given_name || "NOT_AVAILABLE",
-      LastName: claims.family_name || "NOT_AVAILABLE",
-    }
-    console.log(`syncing user ${existingUser.ID} in ${existingUser.CompanyID} with body: ${JSON.stringify(updatedUserBody)}`);
+      Email: userDetails.mail || "NOT_AVAILABLE",
+      FirstName: userDetails.givenName || "NOT_AVAILABLE",
+      LastName: userDetails.surname || "NOT_AVAILABLE",
+      Phone: userDetails.mobilePhone || "NOT_AVAILABLE",
+      xp: {
+        JobTitle: userDetails.jobTitle,
+        DisplayName: userDetails.displayName,
+        BusinessPhones: userDetails.businessPhones,
+        UserPrincipalName: userDetails.userPrincipalName,
+        Country: userDetails.country,
+        City: userDetails.city,
+        State: userDetails.state,
+        PostalCode: userDetails.postalCode
+      }
+    };
+    console.log(
+      `syncing user ${existingUser.ID} in ${
+        existingUser.CompanyID
+      } with body: ${JSON.stringify(updatedUserBody)}`
+    );
     const updatedUser = await Users.Patch(
       existingUser.CompanyID,
       existingUser.ID,

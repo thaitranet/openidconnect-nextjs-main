@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { Configuration, Me, MeUser, Tokens } from "ordercloud-javascript-sdk";
 import { useEffect, useState } from "react";
@@ -22,7 +23,7 @@ export default function Home() {
         const apiUrl = process.env.NEXT_PUBLIC_ORDERCLOUD_API_URL;
         const cid = process.env.NEXT_PUBLIC_ORDERCLOUD_CLIENT_ID;
         const oidcId = process.env.NEXT_PUBLIC_ORDERCLOUD_OPEN_ID_CONNECT_ID;
-        
+
         let openidurl = `${apiUrl}/ocrplogin?id=${oidcId}&cid=${cid}`;
         if (process.env.NEXT_PUBLIC_IDENTITY_PROVIDER === "azure") {
           // This forwards response_mode=form_post to Azure's Authorization endpoint so that
@@ -69,6 +70,9 @@ export default function Home() {
           </span>
         </h2>
         <div className="mb-6">
+          <p>
+            <Link href={"/api/auth/signout"}>Sign out</Link>
+          </p>
           <h3 className="text-xl font-semibold mb-2 text-purple-600">
             OrderCloud User
           </h3>

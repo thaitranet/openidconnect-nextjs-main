@@ -10,6 +10,7 @@ import {
 import { isOrderCloudError } from "@/utils";
 import { jwtDecode as parseJwt } from "jwt-decode";
 import { uuid } from "uuidv4";
+import { getUserDetails } from "@/helpers/users";
 
 Configuration.Set({
   baseApiUrl: process.env.NEXT_PUBLIC_ORDERCLOUD_API_URL,
@@ -38,10 +39,13 @@ const routeHandler: NextApiHandler<OpenIdConnectResponse> = async (
 
     console.log(`User claims decoded from IDP token`, JSON.stringify(claims, null, 4));
 
+    const userDetails = await getUserDetails(payload.TokenResponse.access_token);
+    console.log("User Details:", userDetails);
+
     const usersList = await Users.List(
       process.env.ORDERCLOUD_BUYER_ID,
       {
-        filters: { Username: claims.email },
+        filters: { Email: userDetails.mail },
       },
       // access token has been granted elevated role BuyerUserAdmin required to list users
       { accessToken: payload.OrderCloudAccessToken }
@@ -62,10 +66,21 @@ const routeHandler: NextApiHandler<OpenIdConnectResponse> = async (
     // create a new user in ordercloud on the fly to call out to associate with the incoming idp identity
     const newUserPayload = {
       Username: uuid(), // can be something else but you're responsible for ensuring uniqueness across seller org
-      Email: claims.email || "NOT_AVAILABLE",
-      FirstName: claims.given_name || "NOT_AVAILABLE",
-      LastName: claims.family_name || "NOT_AVAILABLE",
       Active: true,
+      Email: userDetails.mail || "NOT_AVAILABLE",
+      FirstName: userDetails.givenName || "NOT_AVAILABLE",
+      LastName: userDetails.surname || "NOT_AVAILABLE",
+      Phone: userDetails.mobilePhone || "NOT_AVAILABLE",
+      xp: {
+        JobTitle: userDetails.jobTitle,
+        DisplayName: userDetails.displayName,
+        BusinessPhones: userDetails.businessPhones,
+        UserPrincipalName: userDetails.userPrincipalName,
+        Country: userDetails.country,
+        City: userDetails.city,
+        State: userDetails.state,
+        PostalCode: userDetails.postalCode
+      }
     };
     console.log(
       `New user to create in buyerID ${
