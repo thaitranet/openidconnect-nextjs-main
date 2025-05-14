@@ -44,6 +44,7 @@ export default function Home() {
         }
 
         setIdentityToken(idpToken?.toString());
+        Tokens.SetIdentityToken(`${idpToken}`);
         setIsAuthenticated(true);
       }
     }
@@ -69,10 +70,22 @@ export default function Home() {
             {me.LastName !== "NOT_AVAILABLE" && me.LastName}
           </span>
         </h2>
+
+        <div className="flex gap-4 mb-6">
+          <Link
+            href="/update"
+            className="inline-block px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          >
+            Update Account
+          </Link>
+          <Link
+            href="/api/auth/signout"
+            className="inline-block px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          >
+            Sign Out
+          </Link>
+        </div>
         <div className="mb-6">
-          <p>
-            <Link href={"/api/auth/signout"}>Sign out</Link>
-          </p>
           <h3 className="text-xl font-semibold mb-2 text-purple-600">
             OrderCloud User
           </h3>

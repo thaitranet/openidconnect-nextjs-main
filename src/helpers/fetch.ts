@@ -1,5 +1,5 @@
 // helpers/fetch.ts
-import axios, { AxiosRequestConfig, Method } from "axios";
+import axios, { AxiosRequestConfig, Method, AxiosResponse } from "axios";
 
 /**
  * Makes an Authorization "Bearer" request with the given accessToken to the given endpoint.
@@ -13,10 +13,11 @@ export const fetch = async (
   accessToken: string,
   method: Method = "GET",
   data: any = null
-): Promise<any> => {
+): Promise<AxiosResponse<any>> => {
   const options: AxiosRequestConfig = {
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
   };
 
@@ -25,23 +26,19 @@ export const fetch = async (
   try {
     switch (method) {
       case "GET":
-        const getResponse = await axios.get(endpoint, options);
-        return getResponse.data;
+        return await axios.get(endpoint, options);
       case "POST":
-        const postResponse = await axios.post(endpoint, data, options);
-        return postResponse.data;
+        return await axios.post(endpoint, data, options);
       case "PATCH":
-        const patchResponse = await axios.patch(endpoint, data, options);
-        return patchResponse.data;
+        return await axios.patch(endpoint, data, options);
       case "DELETE":
         const deleteUrl = typeof data === "string" ? `${endpoint}/${data}` : endpoint;
-        const deleteResponse = await axios.delete(deleteUrl, options);
-        return deleteResponse.data;
+        return await axios.delete(deleteUrl, options);
       default:
         throw new Error(`Unsupported HTTP method: ${method}`);
     }
   } catch (error: any) {
-    console.error(`Error during ${method} request to ${endpoint}:`, error);
+    console.error(`Error during ${method} request to ${endpoint}:`, error?.response?.data || error.message);
     throw error;
   }
 };
